@@ -26,12 +26,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app/backend
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential \
+    && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt /app/backend/requirements.txt
+
+ARG PYTORCH_VERSION=2.5.1
+
 RUN pip install --upgrade pip \
-    && pip install -r requirements.txt
+    && grep -v '^torch==' requirements.txt > /tmp/requirements-no-torch.txt \
+    && pip install -r /tmp/requirements-no-torch.txt \
+    && pip install \
+        --index-url https://download.pytorch.org/whl/cpu \
+        --extra-index-url https://pypi.org/simple \
+        "torch==${PYTORCH_VERSION}+cpu" \
+    && rm -f /tmp/requirements-no-torch.txt
 
 COPY backend /app/backend
 COPY --from=frontend-builder /app/frontend/out /app/frontend/out

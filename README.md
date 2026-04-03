@@ -131,6 +131,8 @@ docker run --env-file .env.example -p 8000:8000 resume-extractor
 
 Open `http://localhost:8000`.
 
+The Docker image installs the CPU-only PyTorch wheel for Linux so Railway does not pull the multi-gigabyte CUDA runtime packages that exceed smaller plan limits.
+
 ## docker-compose
 
 ```bash
