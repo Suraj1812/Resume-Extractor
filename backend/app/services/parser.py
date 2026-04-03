@@ -42,8 +42,25 @@ TITLE_KEYWORDS = (
     "officer",
 )
 INSTITUTION_KEYWORDS = ("university", "college", "school", "institute", "academy")
-GRADE_PATTERN = regex.compile(
-    r"(?:cgpa|gpa|grade|percentage|score)\s*[:\-]?\s*[a-z0-9./% ]+",
+FIELD_OF_STUDY_KEYWORDS = ("commerce", "science", "arts", "humanities")
+NOISE_LABELS = {
+    "summary",
+    "contact",
+    "email",
+    "phone",
+    "location",
+    "linkedin",
+    "portfolio",
+    "skills",
+    "frontend",
+    "backend",
+    "core",
+    "ai",
+    "education",
+    "experience",
+}
+GRADE_LINE_PATTERN = regex.compile(
+    r"^(?:cgpa|gpa|grade|percentage|score)\s*[:\-]?\s*[a-z0-9./% ]+$",
     regex.IGNORECASE,
 )
 
@@ -102,10 +119,11 @@ class ResumeParserService:
 
     def postprocess(self, text: str, entities: list[NerEntity]) -> ResumeParseResponse:
         sections = extract_sections(text)
-        header_lines = split_lines(sections.get("header", text))[:8]
+        header_lines = split_lines(sections.get("header", text))[:18]
+        document_lines = split_lines(text)[:40]
         name = self._extract_name(header_lines, entities)
-        title = self._extract_title(header_lines, name)
-        location = self._extract_location(header_lines, {name, title})
+        title = self._extract_title(header_lines, document_lines, name)
+        location = self._extract_location(header_lines, document_lines, {name, title})
 
         return ResumeParseResponse(
             name=name,
@@ -113,7 +131,7 @@ class ResumeParserService:
             phone=extract_phone(text),
             title=title,
             location=location,
-            summary=self._extract_summary(sections, header_lines, {name, title, location}),
+            summary=self._extract_summary(sections, header_lines, document_lines, {name, title, location}),
             skills=self._extract_skills(text, sections),
             education=self._extract_education(text, sections, entities),
             experience=self._extract_experience(text, sections, entities),
@@ -147,40 +165,71 @@ class ResumeParserService:
 
         return people[0].strip() if people else ""
 
-    def _extract_title(self, header_lines: list[str], name: str) -> str:
+    def _extract_title(self, header_lines: list[str], document_lines: list[str], name: str) -> str:
         fallback = ""
 
-        for line in header_lines:
-            lowered = line.lower()
+        for line in [*header_lines, *document_lines[:8]]:
             if line == name or self._is_contact_line(line):
                 continue
             if self._looks_like_title(line):
-                return line.strip()
+                return self._normalize_title(line)
             if not fallback and 1 < len(line.split()) <= 8 and "," not in line:
                 fallback = line.strip()
 
         return fallback
 
-    def _extract_location(self, header_lines: list[str], excluded_lines: set[str]) -> str:
-        for line in header_lines:
+    def _extract_location(
+        self,
+        header_lines: list[str],
+        document_lines: list[str],
+        excluded_lines: set[str],
+    ) -> str:
+        labeled_location = self._extract_labeled_value([*header_lines, *document_lines], "location")
+        if labeled_location:
+            return labeled_location
+
+        for line in [*header_lines, *document_lines[:10]]:
             lowered = line.lower()
             if line in excluded_lines or self._is_contact_line(line):
                 continue
             if "," in line and not any(character.isdigit() for character in line):
                 return line.strip()
-            if lowered.endswith(("india", "usa", "united states", "canada", "uk", "remote")):
+            if lowered.endswith(
+                ("india", "usa", "united states", "canada", "uk", "remote", "on-site", "onsite", "hybrid")
+            ):
                 return line.strip()
         return ""
 
-    def _extract_summary(self, sections: dict[str, str], header_lines: list[str], excluded_lines: set[str]) -> str:
+    def _extract_summary(
+        self,
+        sections: dict[str, str],
+        header_lines: list[str],
+        document_lines: list[str],
+        excluded_lines: set[str],
+    ) -> str:
         summary_section = sections.get("summary", "")
         if summary_section:
-            return " ".join(split_lines(summary_section)[:3]).strip()
+            summary_lines: list[str] = []
+            for line in split_lines(summary_section):
+                if summary_lines and (
+                    self._is_noise_label(line) or self._is_contact_value(line) or self._looks_like_location(line)
+                ):
+                    break
+                if not self._is_noise_label(line) and not self._is_contact_value(line):
+                    summary_lines.append(line)
+            if summary_lines and self._looks_like_title(summary_lines[0]) and len(summary_lines[0].split()) <= 4:
+                summary_lines = summary_lines[1:]
+            return " ".join(summary_lines[:3]).strip()
 
         fallback_lines = [
             line
-            for line in header_lines
-            if line not in excluded_lines and not self._is_contact_line(line) and len(line.split()) >= 6
+            for line in [*header_lines, *document_lines[:10]]
+            if (
+                line not in excluded_lines
+                and not self._is_contact_line(line)
+                and not self._is_noise_label(line)
+                and len(line.split()) >= 6
+            )
         ]
         return " ".join(fallback_lines[:2]).strip()
 
@@ -196,7 +245,7 @@ class ResumeParserService:
         entities: list[NerEntity],
     ) -> list[EducationEntry]:
         section_text = sections.get("education", "")
-        blocks = split_blocks(section_text)
+        blocks = self._split_education_blocks(section_text)
 
         if not blocks:
             blocks = self._guess_education_blocks(text)
@@ -228,7 +277,7 @@ class ResumeParserService:
         entities: list[NerEntity],
     ) -> list[ExperienceEntry]:
         section_text = sections.get("experience", "")
-        blocks = split_blocks(section_text)
+        blocks = self._split_experience_blocks(section_text)
 
         if not blocks and not section_text:
             blocks = self._guess_experience_blocks(text)
@@ -254,26 +303,87 @@ class ResumeParserService:
         return entries
 
     def _guess_education_blocks(self, text: str) -> list[list[str]]:
+        return self._split_education_blocks(text)[:4]
+
+    def _guess_experience_blocks(self, text: str) -> list[list[str]]:
+        return self._split_experience_blocks(text)[:6]
+
+    def _split_education_blocks(self, text: str) -> list[list[str]]:
+        lines = [
+            line
+            for line in split_lines(text)
+            if not self._is_noise_label(line) and not self._is_contact_value(line)
+        ]
+        if not lines:
+            return []
+
+        blocks: list[list[str]] = []
+        current: list[str] = []
+
+        for line in lines:
+            starts_new = any(keyword in line.lower() for keyword in INSTITUTION_KEYWORDS)
+            if current and starts_new:
+                blocks.append(current)
+                current = [line]
+                continue
+            current.append(line)
+
+        if current:
+            blocks.append(current)
+
         return [
             block
-            for block in split_blocks(text)
+            for block in blocks
             if any(
                 looks_like_education(line)
                 or any(keyword in line.lower() for keyword in INSTITUTION_KEYWORDS)
+                or self._is_grade_line(line)
                 for line in block
             )
-        ][:4]
+        ]
 
-    def _guess_experience_blocks(self, text: str) -> list[list[str]]:
+    def _split_experience_blocks(self, text: str) -> list[list[str]]:
+        lines = split_lines(text)
+        if not lines:
+            return []
+
+        blocks: list[list[str]] = []
+        current: list[str] = []
+
+        for index, raw_line in enumerate(lines):
+            line = raw_line.strip()
+            if not line or self._is_noise_label(line) or self._is_contact_value(line):
+                continue
+
+            next_line = ""
+            for candidate in lines[index + 1 :]:
+                candidate = candidate.strip()
+                if candidate and not self._is_noise_label(candidate):
+                    next_line = candidate
+                    break
+
+            if self._is_experience_entry_start(line, next_line):
+                if current:
+                    blocks.append(current)
+                current = [line]
+                continue
+
+            if current:
+                current.append(line)
+
+        if current:
+            blocks.append(current)
+
         return [
             block
-            for block in split_blocks(text)
+            for block in blocks
             if parse_date_range(" ".join(block))
-        ][:4]
+            and not any(any(keyword in line.lower() for keyword in INSTITUTION_KEYWORDS) for line in block[:2])
+        ]
 
     def _parse_education_block(self, block: list[str], entities: list[NerEntity]) -> EducationEntry:
         joined = " ".join(block)
-        date_range = parse_date_range(joined)
+        date_range = self._find_date_range(block) or parse_date_range(joined)
         start_date, end_date = self._split_date_range(date_range)
 
         institution = next(
@@ -298,13 +408,18 @@ class ResumeParserService:
                 (
                     line
                     for line in block
-                    if line != institution and not self._is_date_only_line(line) and "@" not in line
+                    if (
+                        line != institution
+                        and not self._is_date_only_line(line)
+                        and not self._is_grade_line(line)
+                        and not self._is_contact_value(line)
+                    )
                 ),
                 "",
             )
 
         degree, field_of_study = self._split_degree_line(degree_line)
-        grade = self._extract_grade(joined)
+        grade = self._extract_grade(block)
         location = next(
             (
                 line
@@ -337,9 +452,14 @@ class ResumeParserService:
 
     def _parse_experience_block(self, block: list[str], entities: list[NerEntity]) -> ExperienceEntry:
         joined = " ".join(block)
-        date_range = parse_date_range(joined)
+        date_range = self._find_date_range(block) or parse_date_range(joined)
         start_date, end_date = self._split_date_range(date_range)
         lines = [line for line in block if line.strip() and line.strip() != date_range]
+        lines = [
+            line
+            for line in lines
+            if not self._is_noise_label(line) and not self._is_contact_value(line)
+        ]
 
         if not lines:
             return ExperienceEntry(start_date=start_date, end_date=end_date)
@@ -347,9 +467,15 @@ class ResumeParserService:
         company = ""
         title = ""
         used_heading_line = ""
+        heading_location = ""
 
         first_line = lines[0]
-        if " at " in first_line.lower():
+        if "·" in first_line:
+            segments = [segment.strip() for segment in first_line.split("·") if segment.strip()]
+            company = segments[0] if segments else first_line.strip()
+            heading_location = segments[1] if len(segments) > 1 else ""
+            used_heading_line = first_line
+        elif " at " in first_line.lower():
             parts = regex.split(r"\bat\b", first_line, maxsplit=1, flags=regex.IGNORECASE)
             if len(parts) == 2:
                 title = parts[0].strip(" ,-")
@@ -378,7 +504,7 @@ class ResumeParserService:
         if organization and not company:
             company = organization
 
-        location = next(
+        location = heading_location or next(
             (
                 line
                 for line in lines
@@ -434,21 +560,35 @@ class ResumeParserService:
             if len(segments) >= 2:
                 return segments[0], segments[1]
 
+        if (
+            len(cleaned.split()) <= 4
+            and not looks_like_education(cleaned)
+            and any(keyword in cleaned.lower() for keyword in FIELD_OF_STUDY_KEYWORDS)
+        ):
+            return "", cleaned
+
         return cleaned, ""
 
     @staticmethod
-    def _extract_grade(text: str) -> str:
-        match = GRADE_PATTERN.search(text)
-        return match.group(0).strip() if match else ""
+    def _extract_grade(lines: list[str]) -> str:
+        for line in lines:
+            cleaned = line.strip()
+            if GRADE_LINE_PATTERN.fullmatch(cleaned):
+                return cleaned
+            if regex.fullmatch(r"\d{1,3}(?:\.\d+)?%", cleaned):
+                return cleaned
+        return ""
 
     @staticmethod
     def _is_contact_line(line: str) -> bool:
         lowered = line.lower()
+        digit_count = sum(character.isdigit() for character in line)
         return (
             "@" in line
             or "linkedin.com" in lowered
             or "github.com" in lowered
-            or bool(regex.search(r"\+?\d[\d\s().-]{7,}", line))
+            or lowered.startswith("in/")
+            or (digit_count >= 10 and bool(regex.search(r"\+?\d[\d\s().-]{7,}", line)))
         )
 
     @staticmethod
@@ -459,9 +599,90 @@ class ResumeParserService:
     def _looks_like_location(line: str) -> bool:
         if "@" in line or any(character.isdigit() for character in line):
             return False
-        return "," in line or line.lower().endswith(("india", "usa", "remote", "uk", "canada"))
+        return "," in line or line.lower().endswith(
+            ("india", "usa", "remote", "uk", "canada", "freelance", "hybrid", "on-site", "onsite")
+        )
 
     @staticmethod
     def _looks_like_title(line: str) -> bool:
         lowered = line.lower()
-        return any(keyword in lowered for keyword in TITLE_KEYWORDS)
+        return (
+            len(line.split()) <= 8
+            and not line.endswith(".")
+            and any(regex.search(rf"\b{regex.escape(keyword)}\b", lowered) for keyword in TITLE_KEYWORDS)
+        )
+
+    def _extract_labeled_value(self, lines: list[str], label: str) -> str:
+        normalized_label = label.lower()
+        for index, line in enumerate(lines):
+            lowered = line.lower().strip()
+            if lowered == normalized_label and index + 1 < len(lines):
+                value = self._strip_trailing_section_heading(lines[index + 1].strip())
+                if value and not self._is_noise_label(value):
+                    return value
+
+            match = regex.match(
+                rf"^{regex.escape(label)}\s*[:\-]?\s*(.+)$",
+                line,
+                regex.IGNORECASE,
+            )
+            if match:
+                value = self._strip_trailing_section_heading(match.group(1).strip())
+                if value and not self._is_noise_label(value):
+                    return value
+
+        return ""
+
+    def _is_experience_entry_start(self, line: str, next_line: str) -> bool:
+        lowered = line.lower()
+        if self._is_noise_label(line) or self._is_contact_value(line):
+            return False
+        if "·" in line:
+            return True
+        if " at " in lowered and next_line and parse_date_range(next_line):
+            return True
+        if next_line and parse_date_range(next_line):
+            return len(line.split()) <= 8 and not self._looks_like_location(line)
+        return False
+
+    @staticmethod
+    def _normalize_title(line: str) -> str:
+        cleaned = regex.sub(r"\s+", " ", line).strip()
+        if cleaned.isupper():
+            return cleaned.title()
+        return cleaned
+
+    @staticmethod
+    def _is_noise_label(line: str) -> bool:
+        return line.strip().lower().rstrip(":") in NOISE_LABELS
+
+    def _is_contact_value(self, line: str) -> bool:
+        lowered = line.lower().strip()
+        return (
+            self._is_contact_line(line)
+            or lowered.startswith("in/")
+            or lowered.startswith("http")
+            or "portfolio" in lowered
+        )
+
+    @staticmethod
+    def _is_grade_line(line: str) -> bool:
+        cleaned = line.strip()
+        return bool(GRADE_LINE_PATTERN.fullmatch(cleaned) or regex.fullmatch(r"\d{1,3}(?:\.\d+)?%", cleaned))
+
+    @staticmethod
+    def _strip_trailing_section_heading(value: str) -> str:
+        return regex.sub(r"\s+(summary|skills|experience|education)\s*$", "", value, flags=regex.IGNORECASE).strip()
+
+    @staticmethod
+    def _find_date_range(lines: list[str]) -> str:
+        for line in lines:
+            parsed = parse_date_range(line)
+            if parsed:
+                return parsed
+
+            year_range = regex.fullmatch(r"(?P<start>\d{4})\s*[-–]\s*(?P<end>\d{4}|Present|Current)", line, regex.IGNORECASE)
+            if year_range:
+                return f"{year_range.group('start')} - {year_range.group('end')}"
+
+        return ""

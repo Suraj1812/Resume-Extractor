@@ -20,7 +20,7 @@ DATE_RANGE_PATTERN = regex.compile(
     regex.IGNORECASE,
 )
 EDUCATION_PATTERN = regex.compile(
-    r"(bachelor|master|mba|phd|doctorate|b\.s\.|b\.a\.|m\.s\.|m\.a\.|b\.tech|m\.tech)",
+    r"(bachelor|master|mba|phd|doctorate|b\.s\.|b\.a\.|m\.s\.|m\.a\.|b\.tech|m\.tech|b\.voc|bvoc)",
     regex.IGNORECASE,
 )
 
@@ -51,9 +51,15 @@ SKILL_KEYWORDS = [
     "CI/CD",
     "JavaScript",
     "TypeScript",
+    "Angular",
     "React",
+    "Redux",
     "Next.js",
     "Node.js",
+    "NestJS",
+    ".NET Core",
+    "Go",
+    "Tailwind",
     "TailwindCSS",
     "HTML",
     "CSS",
@@ -62,6 +68,17 @@ SKILL_KEYWORDS = [
     "Deep Learning",
     "REST",
     "GraphQL",
+    "Firebase",
+    "OpenAI APIs",
+    "Prompt Engineering",
+    "RAG",
+    "RAG Systems",
+    "Vector Databases",
+    "LangChain",
+    "Embeddings",
+    "AI Agents",
+    "AI Chatbots",
+    "Automation Workflows",
 ]
 
 SECTION_ALIASES = {
@@ -206,10 +223,14 @@ def extract_sections(text: str) -> dict[str, str]:
             sections.setdefault(current, []).append("")
             continue
 
-        alias = SECTION_ALIASES.get(line.lower().rstrip(":"))
+        alias, before, after = _split_section_heading(line)
         if alias:
+            if before:
+                sections.setdefault(current, []).append(before)
             current = alias
             sections.setdefault(current, [])
+            if after:
+                sections[current].append(after)
             continue
 
         sections.setdefault(current, []).append(line)
@@ -260,3 +281,30 @@ def parse_date_range(text: str) -> str:
 
 def looks_like_education(text: str) -> bool:
     return bool(EDUCATION_PATTERN.search(text))
+
+
+def _split_section_heading(line: str) -> tuple[str | None, str, str]:
+    cleaned = line.strip()
+    normalized = cleaned.lower().rstrip(":")
+    alias = SECTION_ALIASES.get(normalized)
+    if alias:
+        return alias, "", ""
+
+    for heading in sorted(SECTION_ALIASES.keys(), key=len, reverse=True):
+        prefix_match = regex.match(
+            rf"^{regex.escape(heading)}\s*:?\s+(.+)$",
+            cleaned,
+            regex.IGNORECASE,
+        )
+        if prefix_match:
+            return SECTION_ALIASES[heading], "", prefix_match.group(1).strip()
+
+        suffix_match = regex.match(
+            rf"^(.+?)\s+{regex.escape(heading)}\s*:?$",
+            cleaned,
+            regex.IGNORECASE,
+        )
+        if suffix_match:
+            return SECTION_ALIASES[heading], suffix_match.group(1).strip(), ""
+
+    return None, "", ""
