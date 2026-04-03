@@ -94,9 +94,33 @@ Production-ready end-to-end resume extractor built with:
   "name": "",
   "email": "",
   "phone": "",
+  "title": "",
+  "location": "",
+  "summary": "",
   "skills": [],
-  "education": [],
-  "experience": []
+  "education": [
+    {
+      "institution": "",
+      "degree": "",
+      "field_of_study": "",
+      "start_date": "",
+      "end_date": "",
+      "grade": "",
+      "location": "",
+      "details": []
+    }
+  ],
+  "experience": [
+    {
+      "company": "",
+      "title": "",
+      "start_date": "",
+      "end_date": "",
+      "location": "",
+      "summary": "",
+      "highlights": []
+    }
+  ]
 }
 ```
 

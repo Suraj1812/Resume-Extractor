@@ -8,7 +8,15 @@ import { Loader } from "@/app/components/Loader";
 import { ResultForm } from "@/app/components/ResultForm";
 import { UploadBox } from "@/app/components/UploadBox";
 import { mockSubmitResume, parseResume } from "@/lib/api";
-import { emptyResume, multilineToList, type ResumeData } from "@/lib/types";
+import {
+  emptyEducationItem,
+  emptyExperienceItem,
+  emptyResume,
+  multilineToList,
+  type EducationItem,
+  type ExperienceItem,
+  type ResumeData,
+} from "@/lib/types";
 
 export default function HomePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -65,12 +73,87 @@ export default function HomePage() {
     }
   }
 
-  function updateField(field: "name" | "email" | "phone", value: string) {
+  function updateField(
+    field: "name" | "email" | "phone" | "title" | "location" | "summary",
+    value: string,
+  ) {
     setResume((current) => ({ ...current, [field]: value }));
   }
 
-  function updateList(field: "skills" | "education" | "experience", value: string) {
-    setResume((current) => ({ ...current, [field]: multilineToList(value) }));
+  function updateSkills(value: string) {
+    setResume((current) => ({ ...current, skills: multilineToList(value) }));
+  }
+
+  function updateEducationItem(
+    index: number,
+    field: keyof Omit<EducationItem, "details">,
+    value: string,
+  ) {
+    setResume((current) => ({
+      ...current,
+      education: current.education.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry,
+      ),
+    }));
+  }
+
+  function updateEducationDetails(index: number, value: string) {
+    setResume((current) => ({
+      ...current,
+      education: current.education.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, details: multilineToList(value) } : entry,
+      ),
+    }));
+  }
+
+  function addEducationItem() {
+    setResume((current) => ({
+      ...current,
+      education: [...current.education, emptyEducationItem()],
+    }));
+  }
+
+  function removeEducationItem(index: number) {
+    setResume((current) => ({
+      ...current,
+      education: current.education.filter((_, entryIndex) => entryIndex !== index),
+    }));
+  }
+
+  function updateExperienceItem(
+    index: number,
+    field: keyof Omit<ExperienceItem, "highlights">,
+    value: string,
+  ) {
+    setResume((current) => ({
+      ...current,
+      experience: current.experience.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry,
+      ),
+    }));
+  }
+
+  function updateExperienceHighlights(index: number, value: string) {
+    setResume((current) => ({
+      ...current,
+      experience: current.experience.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, highlights: multilineToList(value) } : entry,
+      ),
+    }));
+  }
+
+  function addExperienceItem() {
+    setResume((current) => ({
+      ...current,
+      experience: [...current.experience, emptyExperienceItem()],
+    }));
+  }
+
+  function removeExperienceItem(index: number) {
+    setResume((current) => ({
+      ...current,
+      experience: current.experience.filter((_, entryIndex) => entryIndex !== index),
+    }));
   }
 
   return (
@@ -139,9 +222,17 @@ export default function HomePage() {
           <ResultForm
             errorMessage={errorMessage}
             isSubmitting={isSubmitting}
+            onAddEducationItem={addEducationItem}
+            onAddExperienceItem={addExperienceItem}
             onChangeField={updateField}
-            onChangeList={updateList}
+            onChangeEducationDetails={updateEducationDetails}
+            onChangeEducationItem={updateEducationItem}
+            onChangeExperienceHighlights={updateExperienceHighlights}
+            onChangeExperienceItem={updateExperienceItem}
+            onChangeSkills={updateSkills}
             onReset={resetState}
+            onRemoveEducationItem={removeEducationItem}
+            onRemoveExperienceItem={removeExperienceItem}
             onSubmit={handleSubmit}
             resume={resume}
             statusMessage={statusMessage}

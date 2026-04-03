@@ -22,8 +22,12 @@ def test_parse_resume_from_plain_text_extracts_expected_fields():
     service = build_parser_service()
     content = b"""
 Jordan Avery
+Senior Software Engineer
 jordan.avery@example.com
 +1 555 234 8899
+
+Summary
+Backend-focused engineer with 6+ years of experience building hiring systems.
 
 Skills
 Python, FastAPI, React, Docker
@@ -44,6 +48,15 @@ B.S. Computer Science
     assert result.name == "Jordan Avery"
     assert result.email == "jordan.avery@example.com"
     assert result.phone == "+1 555 234 8899"
+    assert result.title == "Senior Software Engineer"
+    assert "Backend-focused engineer" in result.summary
     assert "Python" in result.skills
-    assert any("University of Illinois" in entry for entry in result.education)
-    assert any("BrightLayer" in entry for entry in result.experience)
+    assert result.education[0].institution == "University of Illinois"
+    assert result.education[0].degree == "B.S. Computer Science"
+    assert result.education[0].start_date == "2014"
+    assert result.education[0].end_date == "2018"
+    assert result.experience[0].company == "BrightLayer"
+    assert result.experience[0].title == "Senior Engineer"
+    assert result.experience[0].start_date == "Jan 2021"
+    assert result.experience[0].end_date == "Present"
+    assert "Built internal tooling" in result.experience[0].summary
