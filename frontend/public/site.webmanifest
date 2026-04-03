@@ -1,0 +1,17 @@
+{
+  "name": "Resume Extractor",
+  "short_name": "ResumeX",
+  "description": "AI resume parser that extracts structured candidate data and autofills an editable form.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf6ef",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

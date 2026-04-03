@@ -1,0 +1,29 @@
+<svg width="480" height="120" viewBox="0 0 480 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="8" y="14" width="92" height="92" rx="26" fill="#0F172A"/>
+  <rect x="28" y="28" width="42" height="58" rx="12" fill="url(#paper)"/>
+  <path d="M60 28V41C60 44.3137 62.6863 47 66 47H80" fill="#FED7AA"/>
+  <path d="M60 28V41C60 44.3137 62.6863 47 66 47H80" stroke="#FDBA74" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M40 51H59" stroke="#334155" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M40 61H59" stroke="#334155" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M40 71H53" stroke="#334155" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M67 57L84 48V78L67 69" fill="url(#signal)"/>
+  <path d="M67 57L84 48V78L67 69" stroke="#FB923C" stroke-width="3.5" stroke-linejoin="round"/>
+  <circle cx="84" cy="48" r="5.5" fill="#FDBA74"/>
+  <circle cx="84" cy="78" r="5.5" fill="#FDBA74"/>
+  <text x="122" y="56" fill="#0F172A" font-family="Avenir Next, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="34" font-weight="800" letter-spacing="-0.03em">
+    Resume
+  </text>
+  <text x="122" y="87" fill="#475569" font-family="Avenir Next, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="-0.02em">
+    Extractor
+  </text>
+  <defs>
+    <linearGradient id="paper" x1="49" y1="28" x2="49" y2="86" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7ED"/>
+      <stop offset="1" stop-color="#FFEDD5"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="75.5" y1="48" x2="75.5" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDBA74"/>
+      <stop offset="1" stop-color="#F97316"/>
+    </linearGradient>
+  </defs>
+</svg>

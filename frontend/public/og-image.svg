@@ -1,0 +1,51 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#FFF7ED"/>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="171" cy="120" r="200" fill="#FDBA74" fill-opacity="0.16"/>
+  <circle cx="1030" cy="92" r="170" fill="#38BDF8" fill-opacity="0.12"/>
+  <circle cx="1045" cy="562" r="220" fill="#F97316" fill-opacity="0.1"/>
+  <rect x="90" y="92" width="220" height="220" rx="54" fill="#0F172A"/>
+  <rect x="138" y="126" width="100" height="138" rx="24" fill="url(#paper)"/>
+  <path d="M214 126V156C214 163.732 220.268 170 228 170H270" fill="#FED7AA"/>
+  <path d="M214 126V156C214 163.732 220.268 170 228 170H270" stroke="#FDBA74" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M166 180H210" stroke="#334155" stroke-width="10" stroke-linecap="round"/>
+  <path d="M166 205H210" stroke="#334155" stroke-width="10" stroke-linecap="round"/>
+  <path d="M166 231H196" stroke="#334155" stroke-width="10" stroke-linecap="round"/>
+  <path d="M235 194L274 173V245L235 224" fill="url(#signal)"/>
+  <path d="M235 194L274 173V245L235 224" stroke="#FB923C" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="275" cy="174" r="14" fill="#FDBA74"/>
+  <circle cx="275" cy="245" r="14" fill="#FDBA74"/>
+  <text x="364" y="190" fill="#0F172A" font-family="Avenir Next, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="80" font-weight="800" letter-spacing="-0.04em">
+    Resume Extractor
+  </text>
+  <text x="364" y="270" fill="#475569" font-family="Avenir Next, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="34" font-weight="600">
+    Upload resumes. Extract structured candidate data. Autofill an editable form.
+  </text>
+  <rect x="364" y="334" width="720" height="184" rx="34" fill="#FFFFFF" fill-opacity="0.72" stroke="#FDBA74" stroke-width="2"/>
+  <text x="412" y="396" fill="#0F172A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" font-weight="700">
+    { "name": "Jordan Avery" }
+  </text>
+  <text x="412" y="432" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">
+    { "skills": ["Python", "FastAPI", "React", "Docker"] }
+  </text>
+  <text x="412" y="468" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">
+    { "education": ["B.S. Computer Science | 2014 - 2018"] }
+  </text>
+  <text x="412" y="504" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">
+    { "experience": ["Senior Engineer at BrightLayer"] }
+  </text>
+  <defs>
+    <linearGradient id="bg" x1="600" y1="0" x2="600" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FAF6EF"/>
+      <stop offset="1" stop-color="#F5EBDD"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="188" y1="126" x2="188" y2="264" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7ED"/>
+      <stop offset="1" stop-color="#FFEDD5"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="254.5" y1="173" x2="254.5" y2="245" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDBA74"/>
+      <stop offset="1" stop-color="#F97316"/>
+    </linearGradient>
+  </defs>
+</svg>
