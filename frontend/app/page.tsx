@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 
 import { Loader } from "@/app/components/Loader";
+import { Navbar } from "@/app/components/Navbar";
 import { ResultForm } from "@/app/components/ResultForm";
 import { UploadBox } from "@/app/components/UploadBox";
 import { mockSubmitResume, parseResume } from "@/lib/api";
@@ -154,36 +155,40 @@ export default function HomePage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <UploadBox
-        dragging={dragging}
-        isLoading={isParsing}
-        onDragStateChange={setDragging}
-        onExtract={handleParse}
-        onFileSelect={setSelectedFile}
-        selectedFile={selectedFile}
-      />
+    <div className="min-h-screen">
+      <Navbar />
 
-      {isParsing ? <Loader /> : null}
+      <main className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
+        <UploadBox
+          dragging={dragging}
+          isLoading={isParsing}
+          onDragStateChange={setDragging}
+          onExtract={handleParse}
+          onFileSelect={setSelectedFile}
+          selectedFile={selectedFile}
+        />
 
-      <ResultForm
-        errorMessage={errorMessage}
-        isSubmitting={isSubmitting}
-        onAddEducationItem={addEducationItem}
-        onAddExperienceItem={addExperienceItem}
-        onChangeField={updateField}
-        onChangeEducationDetails={updateEducationDetails}
-        onChangeEducationItem={updateEducationItem}
-        onChangeExperienceHighlights={updateExperienceHighlights}
-        onChangeExperienceItem={updateExperienceItem}
-        onChangeSkills={updateSkills}
-        onReset={resetState}
-        onRemoveEducationItem={removeEducationItem}
-        onRemoveExperienceItem={removeExperienceItem}
-        onSubmit={handleSubmit}
-        resume={resume}
-        statusMessage={statusMessage}
-      />
-    </main>
+        {isParsing ? <Loader label="Extracting data..." /> : null}
+
+        <ResultForm
+          errorMessage={errorMessage}
+          isSubmitting={isSubmitting}
+          onAddEducationItem={addEducationItem}
+          onAddExperienceItem={addExperienceItem}
+          onChangeField={updateField}
+          onChangeEducationDetails={updateEducationDetails}
+          onChangeEducationItem={updateEducationItem}
+          onChangeExperienceHighlights={updateExperienceHighlights}
+          onChangeExperienceItem={updateExperienceItem}
+          onChangeSkills={updateSkills}
+          onReset={resetState}
+          onRemoveEducationItem={removeEducationItem}
+          onRemoveExperienceItem={removeExperienceItem}
+          onSubmit={handleSubmit}
+          resume={resume}
+          statusMessage={statusMessage}
+        />
+      </main>
+    </div>
   );
 }
